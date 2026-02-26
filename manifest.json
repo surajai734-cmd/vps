@@ -1,0 +1,41 @@
+{
+  "name": "LUXFEE - School Fee Management",
+  "short_name": "LUXFEE",
+  "description": "Complete school fee management system with session tracking",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#87CEEB",
+  "theme_color": "#667eea",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/667eea/ffffff?text=LF",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/667eea/ffffff?text=LUXFEE",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add Student",
+      "short_name": "Add",
+      "description": "Quickly add a new student",
+      "url": "/?action=add",
+      "icons": [{ "src": "https://via.placeholder.com/96x96/48bb78/ffffff?text=+", "sizes": "96x96" }]
+    },
+    {
+      "name": "Record Payment",
+      "short_name": "Pay",
+      "description": "Quick payment recording",
+      "url": "/?action=pay",
+      "icons": [{ "src": "https://via.placeholder.com/96x96/f56565/ffffff?text=₹", "sizes": "96x96" }]
+    }
+  ]
+}
