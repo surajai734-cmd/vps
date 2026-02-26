@@ -14,23 +14,29 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%23667eea'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='80' fill='white'%3ELF%3C/text%3E%3C/svg%3E",
+      "src": "https://via.placeholder.com/192x192/667eea/ffffff?text=LF",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23667eea'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='200' fill='white'%3ELF%3C/text%3E%3C/svg%3E",
+      "src": "https://via.placeholder.com/512x512/667eea/ffffff?text=LF",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "https://via.placeholder.com/144x144/667eea/ffffff?text=LF",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "screenshots": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1080' height='1920' viewBox='0 0 1080 1920'%3E%3Crect width='1080' height='1920' fill='%2387CEEB'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='40' fill='%23667eea'%3ELUXFEE Dashboard%3C/text%3E%3C/svg%3E",
+      "src": "https://via.placeholder.com/1080x1920/87CEEB/667eea?text=LUXFEE+Dashboard",
       "sizes": "1080x1920",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "platform": "wide",
       "label": "LUXFEE Dashboard showing class-wise student management"
     }
@@ -43,7 +49,7 @@
       "url": "/?action=add",
       "icons": [
         {
-          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%2348bb78'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='48' fill='white'%3E%2B%3C/text%3E%3C/svg%3E",
+          "src": "https://via.placeholder.com/96x96/48bb78/ffffff?text=+",
           "sizes": "96x96"
         }
       ]
@@ -55,7 +61,7 @@
       "url": "/?action=sessions",
       "icons": [
         {
-          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%239f7aea'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='48' fill='white'%3E📅%3C/text%3E%3C/svg%3E",
+          "src": "https://via.placeholder.com/96x96/9f7aea/ffffff?text=📅",
           "sizes": "96x96"
         }
       ]
@@ -67,7 +73,7 @@
       "url": "/?action=batch",
       "icons": [
         {
-          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%23ed8936'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='48' fill='white'%3E⚡%3C/text%3E%3C/svg%3E",
+          "src": "https://via.placeholder.com/96x96/ed8936/ffffff?text=⚡",
           "sizes": "96x96"
         }
       ]
