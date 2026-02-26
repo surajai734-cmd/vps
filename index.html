@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LUXFEE | School Fee Management</title>
     
+    <!-- PWA Manifest and Theme -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="LUXFEE">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -392,6 +400,31 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
+        /* Batch Operations */
+        .batch-select {
+            background: linear-gradient(135deg, #9f7aea, #805ad5);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .batch-select:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(159, 122, 234, 0.4);
+        }
+
+        .student-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
         /* Modal */
         .modal {
             display: none;
@@ -545,6 +578,36 @@
             </div>
             <div id="paymentHistoryList" class="space-y-2">
                 <!-- Payment history will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Payment Modal -->
+    <div id="batchPaymentModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold stylish-title">Batch Payment</h3>
+                <button onclick="closeBatchPaymentModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Selected Students: <span id="selectedCount" class="gradient-text">0</span></label>
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Payment Month</label>
+                    <input type="month" id="batchPaymentMonth" class="input-field" required>
+                </div>
+                
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Payment Amount per Student</label>
+                    <input type="number" id="batchPaymentAmount" class="input-field" placeholder="Enter amount" value="0">
+                </div>
+                
+                <button onclick="processBatchPayment()" class="btn-success w-full">Process Batch Payment</button>
             </div>
         </div>
     </div>
@@ -770,11 +833,44 @@
                         </div>
                     </div>
                     
-                    <button onclick="logout()" class="btn-danger">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleBatchMode()" id="batchModeBtn" class="batch-select">
+                            <i class="fas fa-check-double mr-2"></i>Batch Mode
+                        </button>
+                        <button onclick="logout()" class="btn-danger">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </div>
                 </div>
             </nav>
+
+            <!-- Batch Operations Bar (hidden by default) -->
+            <div id="batchBar" class="glass-card mx-4 mt-2 px-6 py-3 hidden">
+                <div class="max-w-7xl mx-auto flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-white font-semibold">
+                            Selected: <span id="batchSelectedCount" class="font-bold text-yellow-300">0</span>
+                        </span>
+                        <button onclick="selectAllStudents()" class="text-sm bg-blue-500 text-white px-3 py-1 rounded-full hover:bg-blue-600">
+                            Select All
+                        </button>
+                        <button onclick="deselectAllStudents()" class="text-sm bg-gray-500 text-white px-3 py-1 rounded-full hover:bg-gray-600">
+                            Deselect All
+                        </button>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="openBatchPaymentModal()" class="btn-success text-sm">
+                            <i class="fas fa-money-bill mr-1"></i>Batch Payment
+                        </button>
+                        <button onclick="batchPromote()" class="btn-primary text-sm">
+                            <i class="fas fa-arrow-up mr-1"></i>Batch Promote
+                        </button>
+                        <button onclick="batchDelete()" class="btn-danger text-sm">
+                            <i class="fas fa-trash mr-1"></i>Batch Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <!-- Main Dashboard Content -->
             <div class="max-w-7xl mx-auto px-4 py-8">
@@ -795,6 +891,24 @@
                 <!-- Current Session Indicator -->
                 <div id="currentSessionInfo" class="mb-4 text-lg font-semibold gradient-text">
                     Current Session: <span id="currentSessionName" class="highlight">None</span>
+                </div>
+
+                <!-- Session Fee Settings (for batch operations) -->
+                <div id="sessionFeeSettings" class="glass-card p-4 mb-6 hidden">
+                    <h3 class="section-title text-lg font-bold text-gray-800 mb-3">
+                        <i class="fas fa-coins mr-2" style="color: #667eea;"></i>Session Fee Settings
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-700 text-sm font-semibold mb-2">Default Monthly Fee for this Session</label>
+                            <input type="number" id="sessionMonthlyFee" class="input-field" placeholder="Monthly Fee">
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-semibold mb-2">Default Transport Fee for this Session</label>
+                            <input type="number" id="sessionTransportFee" class="input-field" placeholder="Transport Fee">
+                        </div>
+                    </div>
+                    <button onclick="updateSessionFees()" class="btn-primary mt-3 text-sm">Update Session Fees</button>
                 </div>
 
                 <!-- Stats Card - Only Total Students -->
@@ -846,9 +960,14 @@
 
                 <!-- Students List -->
                 <div class="glass-card p-6">
-                    <h3 class="section-title text-xl font-bold text-gray-800 mb-4">
-                        <i class="fas fa-list mr-2" style="color: #667eea;"></i>Student Directory
-                    </h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="section-title text-xl font-bold text-gray-800">
+                            <i class="fas fa-list mr-2" style="color: #667eea;"></i>Student Directory
+                        </h3>
+                        <button onclick="toggleSessionFeeSettings()" class="text-sm bg-purple-500 text-white px-3 py-1 rounded-full hover:bg-purple-600">
+                            <i class="fas fa-sliders-h mr-1"></i>Session Fee Settings
+                        </button>
+                    </div>
                     
                     <div id="studentsList" class="space-y-3">
                         <!-- Students will be loaded here -->
@@ -871,6 +990,10 @@
         let currentUser = null;
         let currentSchoolId = null;
         let currentSession = null;
+        let batchMode = false;
+        let selectedStudents = new Set();
+        let sessionMonthlyFee = 0;
+        let sessionTransportFee = 0;
 
         // Check auth state
         firebase.auth().onAuthStateChanged((user) => {
@@ -900,6 +1023,13 @@
                 document.getElementById('dashboardPage').classList.add('hidden');
             }
         });
+
+        // PWA Service Worker Registration
+        if('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ Service Worker registered!'))
+            .catch(err => console.log('❌ Service Worker Error: ', err));
+        }
 
         // Login function
         window.handleLogin = function() {
@@ -1016,6 +1146,10 @@
                 if (session.isActive) {
                     currentSession = session.id;
                     document.getElementById('currentSessionName').textContent = session.name;
+                    sessionMonthlyFee = session.defaultMonthlyFee || 0;
+                    sessionTransportFee = session.defaultTransportFee || 0;
+                    document.getElementById('sessionMonthlyFee').value = sessionMonthlyFee;
+                    document.getElementById('sessionTransportFee').value = sessionTransportFee;
                 }
                 
                 html += `
@@ -1025,6 +1159,8 @@
                         <p class="text-xs mt-2 bg-white bg-opacity-20 inline-block px-2 py-1 rounded-full">
                             <i class="fas fa-users mr-1"></i> ${session.studentCount || 0} Students
                         </p>
+                        ${session.defaultMonthlyFee ? `<p class="text-xs mt-1">Monthly: ₹${session.defaultMonthlyFee}</p>` : ''}
+                        ${session.defaultTransportFee ? `<p class="text-xs">Transport: ₹${session.defaultTransportFee}</p>` : ''}
                     </div>
                 `;
             });
@@ -1038,6 +1174,8 @@
                 html: `
                     <input type="text" id="sessionName" class="swal2-input" placeholder="Session Name (e.g., 2024-25)">
                     <input type="text" id="sessionYear" class="swal2-input" placeholder="Year (e.g., 2024)">
+                    <input type="number" id="sessionDefaultMonthly" class="swal2-input" placeholder="Default Monthly Fee (optional)">
+                    <input type="number" id="sessionDefaultTransport" class="swal2-input" placeholder="Default Transport Fee (optional)">
                 `,
                 showCancelButton: true,
                 confirmButtonText: 'Create',
@@ -1051,11 +1189,16 @@
                         return false;
                     }
                     
-                    return { name, year };
+                    return { 
+                        name, 
+                        year,
+                        monthlyFee: parseFloat(document.getElementById('sessionDefaultMonthly').value) || 0,
+                        transportFee: parseFloat(document.getElementById('sessionDefaultTransport').value) || 0
+                    };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const { name, year } = result.value;
+                    const { name, year, monthlyFee, transportFee } = result.value;
                     
                     const sessionId = firebase.database().ref().child('sessions').push().key;
                     const sessionData = {
@@ -1065,6 +1208,8 @@
                         schoolId: currentUser.uid,
                         isActive: false,
                         studentCount: 0,
+                        defaultMonthlyFee: monthlyFee,
+                        defaultTransportFee: transportFee,
                         createdAt: new Date().toISOString()
                     };
                     
@@ -1109,6 +1254,317 @@
                 });
         };
 
+        window.updateSessionFees = function() {
+            if (!currentSession) {
+                Swal.fire('Error', 'Please select a session first', 'error');
+                return;
+            }
+
+            const monthlyFee = parseFloat(document.getElementById('sessionMonthlyFee').value) || 0;
+            const transportFee = parseFloat(document.getElementById('sessionTransportFee').value) || 0;
+
+            firebase.database().ref('sessions/' + currentSession).update({
+                defaultMonthlyFee: monthlyFee,
+                defaultTransportFee: transportFee
+            }).then(() => {
+                sessionMonthlyFee = monthlyFee;
+                sessionTransportFee = transportFee;
+                Swal.fire('Success', 'Session fees updated!', 'success');
+            });
+        };
+
+        window.toggleSessionFeeSettings = function() {
+            const settings = document.getElementById('sessionFeeSettings');
+            settings.classList.toggle('hidden');
+        };
+
+        // Batch Mode Functions
+        window.toggleBatchMode = function() {
+            batchMode = !batchMode;
+            const batchBar = document.getElementById('batchBar');
+            const batchBtn = document.getElementById('batchModeBtn');
+            
+            if (batchMode) {
+                batchBar.classList.remove('hidden');
+                batchBtn.innerHTML = '<i class="fas fa-times mr-2"></i>Exit Batch';
+                batchBtn.classList.remove('batch-select');
+                batchBtn.classList.add('btn-danger');
+            } else {
+                batchBar.classList.add('hidden');
+                batchBtn.innerHTML = '<i class="fas fa-check-double mr-2"></i>Batch Mode';
+                batchBtn.classList.add('batch-select');
+                batchBtn.classList.remove('btn-danger');
+                selectedStudents.clear();
+                updateBatchCount();
+            }
+            loadStudents(); // Reload to show/hide checkboxes
+        };
+
+        window.toggleStudentSelection = function(studentId) {
+            if (selectedStudents.has(studentId)) {
+                selectedStudents.delete(studentId);
+            } else {
+                selectedStudents.add(studentId);
+            }
+            updateBatchCount();
+        };
+
+        window.updateBatchCount = function() {
+            document.getElementById('batchSelectedCount').textContent = selectedStudents.size;
+        };
+
+        window.selectAllStudents = function() {
+            const checkboxes = document.querySelectorAll('.student-checkbox');
+            checkboxes.forEach(cb => {
+                selectedStudents.add(cb.value);
+                cb.checked = true;
+            });
+            updateBatchCount();
+        };
+
+        window.deselectAllStudents = function() {
+            const checkboxes = document.querySelectorAll('.student-checkbox');
+            checkboxes.forEach(cb => {
+                selectedStudents.delete(cb.value);
+                cb.checked = false;
+            });
+            updateBatchCount();
+        };
+
+        window.openBatchPaymentModal = function() {
+            if (selectedStudents.size === 0) {
+                Swal.fire('Error', 'Please select at least one student', 'error');
+                return;
+            }
+            document.getElementById('selectedCount').textContent = selectedStudents.size;
+            document.getElementById('batchPaymentModal').classList.add('active');
+        };
+
+        window.closeBatchPaymentModal = function() {
+            document.getElementById('batchPaymentModal').classList.remove('active');
+        };
+
+        window.processBatchPayment = function() {
+            const month = document.getElementById('batchPaymentMonth').value;
+            const amount = parseFloat(document.getElementById('batchPaymentAmount').value);
+
+            if (!month || !amount) {
+                Swal.fire('Error', 'Please fill all fields', 'error');
+                return;
+            }
+
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+
+            const promises = [];
+            selectedStudents.forEach(studentId => {
+                // Get student data
+                const promise = firebase.database().ref('students/' + studentId).once('value')
+                    .then((snapshot) => {
+                        const student = snapshot.val();
+                        if (student && student.sessionId === currentSession) {
+                            const newPaidAmount = student.paidAmount + amount;
+                            const newDueAmount = student.totalFee - newPaidAmount;
+                            
+                            // Update student
+                            return firebase.database().ref('students/' + studentId).update({
+                                paidAmount: newPaidAmount,
+                                dueAmount: newDueAmount
+                            }).then(() => {
+                                // Record payment
+                                const paymentId = firebase.database().ref().child('payments').push().key;
+                                return firebase.database().ref('payments/' + paymentId).set({
+                                    studentId: studentId,
+                                    parentName: student.parentName,
+                                    amount: amount,
+                                    month: month,
+                                    date: new Date().toISOString(),
+                                    schoolId: currentUser.uid,
+                                    sessionId: currentSession
+                                });
+                            }).then(() => {
+                                // Send SMS
+                                sendPaymentSMS(student.phoneNumber, student.parentName, amount, newDueAmount, month);
+                            });
+                        }
+                    });
+                promises.push(promise);
+            });
+
+            Promise.all(promises).then(() => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('batchPaymentModal').classList.remove('active');
+                Swal.fire('Success', `Payment recorded for ${selectedStudents.size} students!`, 'success');
+                deselectAllStudents();
+                loadStudents();
+            });
+        };
+
+        window.batchPromote = function() {
+            if (selectedStudents.size === 0) {
+                Swal.fire('Error', 'Please select at least one student', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Batch Promote',
+                html: `
+                    <select id="batchNewSession" class="swal2-input">
+                        <option value="">Select New Session</option>
+                        ${getSessionsOptions()}
+                    </select>
+                    <input type="text" id="batchNewClass" class="swal2-input" placeholder="New Class (e.g., 6)">
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Promote',
+                confirmButtonColor: '#48bb78',
+                preConfirm: () => {
+                    const newSession = document.getElementById('batchNewSession').value;
+                    const newClass = document.getElementById('batchNewClass').value;
+                    
+                    if (!newSession || !newClass) {
+                        Swal.showValidationMessage('Please fill all fields');
+                        return false;
+                    }
+                    
+                    return { newSession, newClass };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const { newSession, newClass } = result.value;
+                    document.getElementById('loadingOverlay').classList.remove('hidden');
+                    
+                    const promises = [];
+                    selectedStudents.forEach(studentId => {
+                        promises.push(promoteSingleStudent(studentId, currentSession, newSession, newClass));
+                    });
+
+                    Promise.all(promises).then(() => {
+                        document.getElementById('loadingOverlay').classList.add('hidden');
+                        Swal.fire('Success', `${selectedStudents.size} students promoted!`, 'success');
+                        deselectAllStudents();
+                        loadStudents();
+                    });
+                }
+            });
+        };
+
+        window.batchDelete = function() {
+            if (selectedStudents.size === 0) {
+                Swal.fire('Error', 'Please select at least one student', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Delete Students',
+                text: `Are you sure you want to delete ${selectedStudents.size} students?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#f56565',
+                confirmButtonText: 'Yes, delete'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('loadingOverlay').classList.remove('hidden');
+                    
+                    const promises = [];
+                    selectedStudents.forEach(studentId => {
+                        promises.push(deleteSingleStudent(studentId, currentSession));
+                    });
+
+                    Promise.all(promises).then(() => {
+                        document.getElementById('loadingOverlay').classList.add('hidden');
+                        Swal.fire('Deleted!', `${selectedStudents.size} students deleted.`, 'success');
+                        deselectAllStudents();
+                        loadStudents();
+                    });
+                }
+            });
+        };
+
+        function getSessionsOptions() {
+            let options = '';
+            const sessions = document.querySelectorAll('.session-card');
+            sessions.forEach(session => {
+                const id = session.getAttribute('data-id');
+                const name = session.querySelector('h4').textContent;
+                if (id !== currentSession) {
+                    options += `<option value="${id}">${name}</option>`;
+                }
+            });
+            return options;
+        }
+
+        function promoteSingleStudent(studentId, oldSessionId, newSessionId, newClass) {
+            return firebase.database().ref('students/' + studentId).once('value')
+                .then((snapshot) => {
+                    const oldStudent = snapshot.val();
+                    
+                    const newStudentId = firebase.database().ref().child('students').push().key;
+                    const newStudent = {
+                        id: newStudentId,
+                        parentName: oldStudent.parentName,
+                        studentName: oldStudent.studentName,
+                        className: newClass,
+                        phoneNumber: oldStudent.phoneNumber,
+                        monthlyFee: sessionMonthlyFee || oldStudent.monthlyFee,
+                        transportFee: sessionTransportFee || oldStudent.transportFee,
+                        totalFee: (sessionMonthlyFee || oldStudent.monthlyFee) + (sessionTransportFee || oldStudent.transportFee),
+                        paidAmount: 0,
+                        dueAmount: (sessionMonthlyFee || oldStudent.monthlyFee) + (sessionTransportFee || oldStudent.transportFee),
+                        schoolId: currentUser.uid,
+                        sessionId: newSessionId,
+                        promotedFrom: studentId,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    return firebase.database().ref('students/' + newStudentId).set(newStudent);
+                })
+                .then(() => {
+                    return firebase.database().ref('students/' + studentId).remove();
+                })
+                .then(() => {
+                    return Promise.all([
+                        firebase.database().ref('sessions/' + oldSessionId).once('value'),
+                        firebase.database().ref('sessions/' + newSessionId).once('value')
+                    ]);
+                })
+                .then(([oldSnapshot, newSnapshot]) => {
+                    const oldSession = oldSnapshot.val();
+                    const newSession = newSnapshot.val();
+                    
+                    return Promise.all([
+                        firebase.database().ref('sessions/' + oldSessionId).update({
+                            studentCount: Math.max(0, (oldSession.studentCount || 1) - 1)
+                        }),
+                        firebase.database().ref('sessions/' + newSessionId).update({
+                            studentCount: (newSession.studentCount || 0) + 1
+                        })
+                    ]);
+                });
+        }
+
+        function deleteSingleStudent(studentId, sessionId) {
+            return firebase.database().ref('students/' + studentId).remove()
+                .then(() => {
+                    return firebase.database().ref('payments').orderByChild('studentId').equalTo(studentId).once('value');
+                })
+                .then((snapshot) => {
+                    const updates = [];
+                    snapshot.forEach((child) => {
+                        updates.push(firebase.database().ref('payments/' + child.key).remove());
+                    });
+                    return Promise.all(updates);
+                })
+                .then(() => {
+                    return firebase.database().ref('sessions/' + sessionId).once('value');
+                })
+                .then((snapshot) => {
+                    const session = snapshot.val();
+                    return firebase.database().ref('sessions/' + sessionId).update({
+                        studentCount: Math.max(0, (session.studentCount || 1) - 1)
+                    });
+                });
+        }
+
         // Add student function
         window.addStudent = function() {
             if (!currentUser) {
@@ -1125,8 +1581,8 @@
             const studentName = document.getElementById('studentName').value;
             const className = document.getElementById('className').value;
             const phoneNumber = document.getElementById('phoneNumber').value;
-            const monthlyFee = parseFloat(document.getElementById('monthlyFee').value) || 0;
-            const transportFee = parseFloat(document.getElementById('transportFee').value) || 0;
+            const monthlyFee = parseFloat(document.getElementById('monthlyFee').value) || sessionMonthlyFee || 0;
+            const transportFee = parseFloat(document.getElementById('transportFee').value) || sessionTransportFee || 0;
             const paidAmount = parseFloat(document.getElementById('paidAmount').value) || 0;
             const paymentMonth = document.getElementById('paymentMonth').value;
 
@@ -1325,34 +1781,11 @@
                 if (result.isConfirmed) {
                     document.getElementById('loadingOverlay').classList.remove('hidden');
                     
-                    // Delete student
-                    firebase.database().ref('students/' + studentId).remove()
-                        .then(() => {
-                            // Delete all payments for this student
-                            return firebase.database().ref('payments').orderByChild('studentId').equalTo(studentId).once('value');
-                        })
-                        .then((snapshot) => {
-                            const updates = [];
-                            snapshot.forEach((child) => {
-                                updates.push(firebase.database().ref('payments/' + child.key).remove());
-                            });
-                            return Promise.all(updates);
-                        })
-                        .then(() => {
-                            // Update student count in session
-                            return firebase.database().ref('sessions/' + sessionId).once('value');
-                        })
-                        .then((snapshot) => {
-                            const session = snapshot.val();
-                            return firebase.database().ref('sessions/' + sessionId).update({
-                                studentCount: Math.max(0, (session.studentCount || 1) - 1)
-                            });
-                        })
-                        .then(() => {
-                            document.getElementById('loadingOverlay').classList.add('hidden');
-                            Swal.fire('Deleted!', 'Student has been deleted.', 'success');
-                            loadStudents();
-                        });
+                    deleteSingleStudent(studentId, sessionId).then(() => {
+                        document.getElementById('loadingOverlay').classList.add('hidden');
+                        Swal.fire('Deleted!', 'Student has been deleted.', 'success');
+                        loadStudents();
+                    });
                 }
             });
         };
@@ -1393,52 +1826,7 @@
 
             document.getElementById('loadingOverlay').classList.remove('hidden');
 
-            // Get old student data
-            firebase.database().ref('students/' + studentId).once('value')
-                .then((snapshot) => {
-                    const oldStudent = snapshot.val();
-                    
-                    // Create new student in new session
-                    const newStudentId = firebase.database().ref().child('students').push().key;
-                    const newStudent = {
-                        id: newStudentId,
-                        parentName: oldStudent.parentName,
-                        studentName: oldStudent.studentName,
-                        className: newClass,
-                        phoneNumber: oldStudent.phoneNumber,
-                        monthlyFee: newMonthlyFee || oldStudent.monthlyFee,
-                        transportFee: newTransportFee || oldStudent.transportFee,
-                        totalFee: (newMonthlyFee || oldStudent.monthlyFee) + (newTransportFee || oldStudent.transportFee),
-                        paidAmount: 0,
-                        dueAmount: (newMonthlyFee || oldStudent.monthlyFee) + (newTransportFee || oldStudent.transportFee),
-                        schoolId: currentUser.uid,
-                        sessionId: newSessionId,
-                        promotedFrom: studentId,
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    return firebase.database().ref('students/' + newStudentId).set(newStudent);
-                })
-                .then(() => {
-                    // Update student counts
-                    return Promise.all([
-                        firebase.database().ref('sessions/' + oldSessionId).once('value'),
-                        firebase.database().ref('sessions/' + newSessionId).once('value')
-                    ]);
-                })
-                .then(([oldSnapshot, newSnapshot]) => {
-                    const oldSession = oldSnapshot.val();
-                    const newSession = newSnapshot.val();
-                    
-                    return Promise.all([
-                        firebase.database().ref('sessions/' + oldSessionId).update({
-                            studentCount: Math.max(0, (oldSession.studentCount || 1) - 1)
-                        }),
-                        firebase.database().ref('sessions/' + newSessionId).update({
-                            studentCount: (newSession.studentCount || 0) + 1
-                        })
-                    ]);
-                })
+            promoteSingleStudent(studentId, oldSessionId, newSessionId, newClass)
                 .then(() => {
                     document.getElementById('loadingOverlay').classList.add('hidden');
                     document.getElementById('promoteModal').classList.remove('active');
@@ -1576,13 +1964,20 @@
             let html = '';
             students.sort((a, b) => a.parentName.localeCompare(b.parentName)).forEach(student => {
                 const dueClass = student.dueAmount > 0 ? 'text-red-600 font-bold' : 'text-green-600 font-bold';
+                const isSelected = selectedStudents.has(student.id);
                 
                 html += `
                     <div class="student-card" data-parent="${student.parentName.toLowerCase()}" 
                          data-student="${student.studentName.toLowerCase()}" 
                          data-class="${student.className.toLowerCase()}">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-center">
-                            <div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 items-center">
+                            ${batchMode ? `
+                                <div class="flex justify-center">
+                                    <input type="checkbox" class="student-checkbox" value="${student.id}" 
+                                           onchange="toggleStudentSelection('${student.id}')" ${isSelected ? 'checked' : ''}>
+                                </div>
+                            ` : ''}
+                            <div ${batchMode ? '' : 'class="lg:col-span-1"'}>
                                 <p class="text-sm text-gray-500">Parent</p>
                                 <p class="font-semibold gradient-text text-lg">${student.parentName}</p>
                             </div>
@@ -1609,17 +2004,19 @@
                                     <i class="fas fa-bolt mr-1"></i> Quick Pay
                                 </button>
                             </div>
-                            <div class="flex gap-2 justify-end">
-                                <button onclick="editStudent('${student.id}', '${student.sessionId}')" class="action-btn edit" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="deleteStudent('${student.id}', '${student.sessionId}')" class="action-btn delete" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                <button onclick="promoteStudentModal('${student.id}', '${student.sessionId}')" class="action-btn promote" title="Promote">
-                                    <i class="fas fa-arrow-up"></i>
-                                </button>
-                            </div>
+                            ${!batchMode ? `
+                                <div class="flex gap-2 justify-end">
+                                    <button onclick="editStudent('${student.id}', '${student.sessionId}')" class="action-btn edit" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteStudent('${student.id}', '${student.sessionId}')" class="action-btn delete" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <button onclick="promoteStudentModal('${student.id}', '${student.sessionId}')" class="action-btn promote" title="Promote">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -1736,6 +2133,10 @@
             const promoteModal = document.getElementById('promoteModal');
             if (event.target === promoteModal) {
                 closePromoteModal();
+            }
+            const batchModal = document.getElementById('batchPaymentModal');
+            if (event.target === batchModal) {
+                closeBatchPaymentModal();
             }
         };
     </script>
